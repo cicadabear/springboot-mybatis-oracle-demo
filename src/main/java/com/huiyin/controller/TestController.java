@@ -102,7 +102,7 @@ public class TestController {
             }
             ExcelXUtils.getInstance().appendRows(workbook, fileName, headers.length, dataList);
             dataList.clear();
-            System.out.println("======== " + page *pageSize);
+            System.out.println("======== " + page * pageSize);
             if (page == 1) {
                 lastProcessingTime = DateTime.now().getMillis() - lastTime.getMillis();
             } else {
@@ -138,5 +138,56 @@ public class TestController {
                 ")\n" +
                 "WHERE r__ >= %d";
         return String.format(sqlStr, num1, num2);
+    }
+
+    @RequestMapping(value = "/testExcel3", method = RequestMethod.GET)
+    @ResponseBody
+    public void testExcel3(HttpServletRequest request, HttpServletResponse response) throws SQLException {
+        System.out.println("start");
+        DateTime startTime = DateTime.now();
+        String sql = "select a.ResID as \"ResID\",a.BookingRef as \"BookingRef\",b.TicketID as \"TicketID\",a.TicketCorp as \"TicketCorp\",a.SendCorp as \"SendCorp\",a.OfficeID as \"OfficeID\",a.ticketOffice as \"ticketOffice\",c.FlightNo as \"FlightNo\",c.Cabin as \"Cabin\",b.OutPrice as \"OutPrice\",b.AgtPrice as \"AgtPrice\",b.InPrice as \"InPrice\",b.YQFee as \"YQFee\",b.TaxFee as \"TaxFee\",b.ReturnPrice as \"ReturnPrice\",a.CustFfp as \"CustFfp\",b.AirDiscount as \"AirDiscount\",b.reward as \"reward\",b.serviceCharge as \"serviceCharge\"  FROM T_Airbook a,T_AIRBOOKDETAIL b,T_AirBookLines c  WHERE a.resid = b.resid  AND b.resserial = c.resserial  AND a.resid = c.resid  and ( (a.AlertStatus=1 and a.SUBMITSUPPLYTIME >= to_date('2019-03-02','yyyy/mm/dd') and a.SUBMITSUPPLYTIME < to_date('2019-03-21','yyyy/mm/dd')) or  (a.AlertStatus in (0,2,3,4) and a.tickettime >= to_date('2019-03-02','yyyy/mm/dd') and a.tickettime < to_date('2019-03-21','yyyy/mm/dd')))  AND a.AlertStatus in (3,0)  AND a.SendCorp in ('100003','100021','100022') AND a.BookStatus in (25,30,40,50)";
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        Statement stmt = sqlSession.getConnection().createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+        stmt.setFetchSize(10000);
+        ResultSet rors = stmt.executeQuery(sql);
+        System.out.println("query time consuming = " + Seconds.secondsBetween(startTime, DateTime.now()).getSeconds() + "s");
+        //excel标题
+        String[] headers = {"ResID", "BookingRef", "TicketID", "TicketCorp", "SendCorp"};
+        //excel文件名
+        String fileName = "测试导表";
+        List<List<String>> dataList = new ArrayList<>();
+        SXSSFWorkbook workbook = ExcelXUtils.getInstance().exportExcelXWithCommonData(fileName, headers, null, dataList, false);
+        int i = 0;
+        int batch = 0;
+        int batchSize = 5000;
+        while (rors.next()) {
+            i++;
+            List<String> row = new ArrayList<>();
+            row.add(rors.getString("ResID"));
+            row.add(rors.getString("BookingRef"));
+            row.add(rors.getString("TicketID"));
+            row.add(rors.getString("TicketCorp"));
+            row.add(rors.getString("SendCorp"));
+            dataList.add(row);
+            if (dataList.size() % batchSize == 0) {
+                DateTime startWriteTime = DateTime.now();
+                ExcelXUtils.getInstance().appendRows(workbook, fileName, headers.length, dataList);
+                System.out.println("batch write time consuming = " + Seconds.secondsBetween(startWriteTime, DateTime.now()).getSeconds() + "s");
+                dataList.clear();
+                batch++;
+                System.out.println("==========" + batch * batchSize);
+            }
+            if (dataList.size() % 1000 == 0) {
+                System.out.println("========" + i);
+            }
+        }
+        ExcelXUtils.getInstance().appendRows(workbook, fileName, headers.length, dataList);
+//        sqlSession.getConnection().close();
+        sqlSession.close();
+        response.reset();
+        //火狐浏览器乱码解决
+        ExcelXUtils.getInstance().fireFoxEnCode(request, response, fileName, workbook, false);
+        System.out.println("time consuming = " + Seconds.secondsBetween(startTime, DateTime.now()).getSeconds() + "s");
+        return;
     }
 }

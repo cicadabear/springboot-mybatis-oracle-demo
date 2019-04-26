@@ -25,28 +25,28 @@ public class MybatisDemoApplication {
 		SpringApplication.run(MybatisDemoApplication.class, args);
 	}
 
-	@Bean
-    CommandLineRunner demo (CarMapper carMapper) {
-	    return args -> {
-
-            List<Car> cars = Arrays.asList(
-                    new Car("Honda", "Civic", 1984, null),
-                    new Car("BMW", "330i", 2012, null),
-                    new Car("Infiniti", "Q50", 2014, null)
-                    );
-
-            cars.forEach( car -> {
-                carMapper.insert(car);
-                System.out.println(car.toString());
-            });
-
-            System.out.println("--------------------");
-            carMapper.selectAll().forEach(System.out::println);
-
-            System.out.println("--------------------");
-            carMapper.search("Honda", null, 0).forEach(System.out::println);
-        };
-    }
+//	@Bean
+//    CommandLineRunner demo (CarMapper carMapper) {
+//	    return args -> {
+//
+//            List<Car> cars = Arrays.asList(
+//                    new Car("Honda", "Civic", 1984, null),
+//                    new Car("BMW", "330i", 2012, null),
+//                    new Car("Infiniti", "Q50", 2014, null)
+//                    );
+//
+//            cars.forEach( car -> {
+//                carMapper.insert(car);
+//                System.out.println(car.toString());
+//            });
+//
+//            System.out.println("--------------------");
+//            carMapper.selectAll().forEach(System.out::println);
+//
+//            System.out.println("--------------------");
+//            carMapper.search("Honda", null, 0).forEach(System.out::println);
+//        };
+//    }
 }
 
 @Mapper
